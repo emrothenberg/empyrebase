@@ -3,8 +3,8 @@ import math
 from random import randrange
 import time
 from urllib.parse import urlencode
-from pyrebase.utils import convert_list_to_pyre, convert_to_pyre, raise_detailed_error
-from pyrebase.types import PyreResponse, Stream
+from empyrebase.utils import convert_list_to_pyre, convert_to_pyre, raise_detailed_error
+from empyrebase.types import PyreResponse, Stream
 
 
 class Database:

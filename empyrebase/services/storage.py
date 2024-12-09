@@ -1,7 +1,7 @@
 from uuid import uuid4
 from google.cloud import storage
 from urllib.parse import quote
-from pyrebase.utils import raise_detailed_error
+from empyrebase.utils import raise_detailed_error
 import requests
 
 

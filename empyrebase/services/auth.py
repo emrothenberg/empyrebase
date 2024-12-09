@@ -1,7 +1,7 @@
 import datetime
 import json
 import jwt as jwt
-from pyrebase.utils import raise_detailed_error
+from empyrebase.utils import raise_detailed_error
 import requests
 from Crypto.PublicKey import RSA
 

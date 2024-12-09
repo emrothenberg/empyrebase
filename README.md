@@ -1,25 +1,25 @@
-# Pyrebase4
+# Empyrebase
 
 A simple python wrapper for the [Firebase API](https://firebase.google.com).
 
 ## Installation
 
 ```shell
-pip install pyrebase4
+pip install empyrebase
 ```
 
 ## Getting Started
 
 ### Python Version
 
-Pyrebase was written for python 3 and will not work correctly with python 2.
+Empyrebase was written for python 3 and will not work correctly with python 2.
 
-### Add Pyrebase to your application
+### Add empyrebase to your application
 
 For use with only user based authentication we can create the following configuration:
 
 ```python
-import pyrebase
+import empyrebase
 
 config = {
   "apiKey": "apiKey",
@@ -28,14 +28,14 @@ config = {
   "storageBucket": "projectId.appspot.com"
 }
 
-firebase = pyrebase.initialize_app(config)
+firebase = empyrebase.initialize_app(config)
 ```
 
 We can optionally add a [service account credential](https://firebase.google.com/docs/server/setup#prerequisites) to our
 configuration that will allow our server to authenticate with Firebase as an admin and disregard any security rules.
 
 ```python
-import pyrebase
+import empyrebase
 
 config = {
   "apiKey": "apiKey",
@@ -45,7 +45,7 @@ config = {
   "serviceAccount": "path/to/serviceAccountCredentials.json"
 }
 
-firebase = pyrebase.initialize_app(config)
+firebase = empyrebase.initialize_app(config)
 ```
 
 Adding a service account will authenticate as an admin by default for all database queries, check out the
@@ -53,13 +53,14 @@ Adding a service account will authenticate as an admin by default for all databa
 
 ### Use Services
 
-A Pyrebase app can use multiple Firebase services.
+An empyrebase app can use multiple Firebase services.
 
 ```firebase.auth()``` - [Authentication](#authentication)
 
 ```firebase.database()``` - [Database](#database)
 
 ```firebase.storage()``` - [Storage](#storage)
+
 ```firebase.firestore()``` - [Firestore](#firestore)
 
 Check out the documentation for each service for further details.
@@ -326,7 +327,7 @@ You can listen to live changes to your data with the ```stream()``` method.
 def stream_handler(message):
     print(message["event"]) # put
     print(message["path"]) # /-K7yGTTEp7O549EzTYtI
-    print(message["data"]) # {'title': 'Pyrebase', "body": "etc..."}
+    print(message["data"]) # {'title': 'empyrebase', "body": "etc..."}
 
 my_stream = db.child("posts").stream(stream_handler)
 ```
@@ -485,14 +486,14 @@ articles_by_likes = db.sort(articles, "likes")
 
 ## Firestore
 
-The `firestore` method in Pyrebase4 allows interaction with Firebase Firestore.
+The `firestore` method in empyrebase allows interaction with Firebase Firestore.
 
 ### Initialize Firestore
 
 Initialize Firestore with required project and authentication parameters.
 
 ```python
-from pyrebase import Firestore
+from empyrebase import Firestore
 
 firebase_path = "your_firestore_path" # Optional. Base path for all Firestore operations. Defaults to "/"
 auth_id = "your_auth_id_token" # Optional. Enables authorized transactions.

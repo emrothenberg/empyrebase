@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Pyrebase4',
-    version='4.8.0',
-    url='https://github.com/nhorvath/Pyrebase4',
+    name='empyrebase',
+    version='1.0.0',
+    url='https://github.com/emrothenberg/empyrebase',
     description='A simple python wrapper for the Firebase API with current deps',
-    author='nhorvath',
+    author='emrothenberg',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -13,7 +13,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.4',
     ],
-    keywords='Firebase',
+    keywords='Firebase, Pyrebase, Google, Empyrebase',
     packages=find_packages(exclude=['tests']),
     install_requires=[
         'requests-toolbelt>=1.0.0',

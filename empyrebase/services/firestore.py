@@ -1,5 +1,5 @@
 from datetime import datetime
-from pyrebase.utils import raise_detailed_error, replace_all
+from empyrebase.utils import raise_detailed_error, replace_all
 
 class Firestore:
     """Firebase Firestore"""

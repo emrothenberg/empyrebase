@@ -1,0 +1,1 @@
+from .empyrebase import initialize_app

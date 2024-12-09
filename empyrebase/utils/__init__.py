@@ -1,4 +1,4 @@
-from pyrebase.types import Pyre
+from empyrebase.types import Pyre
 from requests import HTTPError
 
 

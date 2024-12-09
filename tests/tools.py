@@ -1,4 +1,4 @@
-from pyrebase import pyrebase
+from empyrebase import empyrebase
 from tests import config
 
 
@@ -8,4 +8,4 @@ def make_db(service_account=False):
     else:
         c = config.SIMPLE_CONFIG
 
-    return pyrebase.initialize_app(c).database()
+    return empyrebase.initialize_app(c).database()

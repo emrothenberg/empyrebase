@@ -1,6 +1,6 @@
 .DS_Store
 .idea
-Pyrebase*.egg-info
+empyrebase*.egg-info
 build
 dist
 test.py
@@ -9,6 +9,7 @@ run.py
 __pycache__
 *.pyc
 pyrebase.py.orig
+empyrebase.py.orig
 secret.json
 tests/config.py
 .cache
