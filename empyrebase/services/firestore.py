@@ -1,6 +1,7 @@
 from datetime import datetime
 from empyrebase.utils import raise_detailed_error, replace_all
 
+
 class Firestore:
     """Firebase Firestore"""
 
@@ -30,7 +31,7 @@ class Firestore:
 
         return self.update_document(document, data)
 
-    def get_document(self, document: str):
+    def get_document(self, document: str, _during_update: bool = False):
         """Fetches the document from firestore database
 
         Args:
@@ -39,14 +40,16 @@ class Firestore:
         request_url = f"{self.base_path}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
-        
+
         response = self.requests.get(request_url, headers=self.headers)
-        
+
         if response.status_code == 200:
             data = response.json().get('fields', {})
             cleaned = self._doc_to_dict(data)
             return cleaned
         else:
+            if _during_update:
+                return {}
             raise_detailed_error(response)
 
     def batch_get_documents(self, documents: list):
@@ -58,7 +61,7 @@ class Firestore:
         request_url = f"{self.base_path}:batchGet"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
-        
+
         response = self.requests.post(request_url, headers=self.headers, json={
             "documents": [
                 f"projects/{self.project_id}/databases/{
@@ -90,16 +93,17 @@ class Firestore:
             raise_detailed_error(response)
 
     def update_document(self, document, data):
-        existing_data = self.get_document(document)
+        existing_data = self.get_document(document, True)
         data = {**existing_data, **data}
         firestore_data = self._dict_to_doc(data)
 
-        firestore_data = {k: v for k, v in firestore_data.items() if v is not None}
+        firestore_data = {k: v for k,
+                          v in firestore_data.items() if v is not None}
 
         request_url = f"{self.base_path}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
-        
+
         response = self.requests.patch(
             request_url, headers=self.headers, json={"fields": firestore_data})
 
@@ -115,7 +119,7 @@ class Firestore:
         request_url = f"{self.base_path}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
-        
+
         response = self.requests.delete(request_url, headers=self.headers)
         if response.status_code != 200:
             raise_detailed_error(response)
@@ -129,7 +133,7 @@ class Firestore:
         request_url = f"{self.base_path}/{collection}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
-        
+
         response = self.requests.get(request_url, headers=self.headers)
         if response.status_code == 200:
             documents = response.json().get('documents', [])
@@ -149,21 +153,26 @@ class Firestore:
             case 'mapValue':
                 processed = self._doc_to_dict(value['fields'])
             case 'timestampValue':
-                processed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                processed = datetime.fromisoformat(
+                    value.replace("Z", "+00:00"))
             case 'arrayValue':
                 processed = [self.__process_value(
-                    d, v) for val in value["values"] for d, v in val.items()]
+                    d, v) for val in value.get("values", []) for d, v in val.items()]
 
         return processed
-    
+
+    def __convert_to_fb(self, value):
+        return ({"stringValue": value} if isinstance(value, str)
+                else {"integerValue": value} if isinstance(value, int)
+                else {"booleanValue": value} if isinstance(value, bool)
+                else {"timestampValue": value.isoformat()} if isinstance(value, datetime)
+                else {"mapValue": {"fields": self._dict_to_doc(value)}} if isinstance(value, dict)
+                else {"arrayValue": {"values": [self.__convert_to_fb(v) for v in value]}} if isinstance(value, list)
+                else {"nullValue": None} if value == None
+                else None)
+
     def _dict_to_doc(self, data: dict):
-        return {key: {"stringValue": value} if isinstance(value, str)
-                        else {"integerValue": value} if isinstance(value, int)
-                        else {"booleanValue": value} if isinstance(value, bool)
-                        else {"timestampValue": value.isoformat()} if isinstance(value, datetime)
-                        else {"mapValue": {"fields": self._dict_to_doc(value)}} if isinstance(value, dict)
-                        else None
-                        for key, value in data.items()}
+        return {key: self.__convert_to_fb(value) for key, value in data.items()}
 
     def _doc_to_dict(self, data: dict) -> dict:
         clean = {}
