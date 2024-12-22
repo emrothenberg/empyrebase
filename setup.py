@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='empyrebase',
-    version='1.0.2',
+    version='1.0.3',
     url='https://github.com/emrothenberg/empyrebase',
     description='A simple python wrapper for the Firebase API with current deps',
     author='emrothenberg',

@@ -151,13 +151,18 @@ class Firestore:
             case 'booleanValue':
                 processed = bool(value)
             case 'mapValue':
-                processed = self._doc_to_dict(value['fields'])
+                processed = self._doc_to_dict(value.get('fields', {}))
             case 'timestampValue':
                 processed = datetime.fromisoformat(
                     value.replace("Z", "+00:00"))
             case 'arrayValue':
-                processed = [self.__process_value(
-                    d, v) for val in value.get("values", []) for d, v in val.items()]
+                processed = [
+                    self.__process_value(v_type, v_value)
+                    for item in value.get('values', [])
+                    for v_type, v_value in item.items()
+                ]
+            case _:
+                print("WARNING: Unsupported dtype, defaulting to NoneType:", dtype)
 
         return processed
 
