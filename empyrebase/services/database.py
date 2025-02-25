@@ -9,6 +9,7 @@ from empyrebase.types import PyreResponse, Stream
 
 class Database:
     """ Database Service """
+
     def __init__(self, credentials, api_key, database_url, requests):
 
         if not database_url.endswith('/'):
@@ -83,9 +84,11 @@ class Database:
                 parameters[param] = "true" if self.build_query[param] else "false"
             else:
                 parameters[param] = self.build_query[param]
+
         # reset path and build_query for next query
-        request_ref = '{0}{1}.json?{2}'.format(self.database_url, self.path, urlencode(parameters))
+        request_ref = f'{self.database_url}{self.path}.json?{urlencode(parameters)}'
         self.path = ""
+
         self.build_query = {}
         return request_ref
 
@@ -122,11 +125,14 @@ class Database:
         sorted_response = None
         if build_query.get("orderBy"):
             if build_query["orderBy"] == "$key":
-                sorted_response = sorted(request_dict.items(), key=lambda item: item[0])
+                sorted_response = sorted(
+                    request_dict.items(), key=lambda item: item[0])
             elif build_query["orderBy"] == "$value":
-                sorted_response = sorted(request_dict.items(), key=lambda item: item[1])
+                sorted_response = sorted(
+                    request_dict.items(), key=lambda item: item[1])
             else:
-                sorted_response = sorted(request_dict.items(), key=lambda item: (build_query["orderBy"] in item[1], item[1].get(build_query["orderBy"], "")))
+                sorted_response = sorted(request_dict.items(), key=lambda item: (
+                    build_query["orderBy"] in item[1], item[1].get(build_query["orderBy"], "")))
         return PyreResponse(convert_to_pyre(sorted_response), query_key)
 
     def push(self, data, token=None, json_kwargs=None):
@@ -134,7 +140,8 @@ class Database:
         request_ref = self.check_token(self.database_url, self.path, token)
         self.path = ""
         headers = self.build_headers(token)
-        request_object = self.requests.post(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+        request_object = self.requests.post(
+            request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
         raise_detailed_error(request_object)
         return request_object.json()
 
@@ -143,7 +150,8 @@ class Database:
         request_ref = self.check_token(self.database_url, self.path, token)
         self.path = ""
         headers = self.build_headers(token)
-        request_object = self.requests.put(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+        request_object = self.requests.put(
+            request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
         raise_detailed_error(request_object)
         return request_object.json()
 
@@ -152,7 +160,8 @@ class Database:
         request_ref = self.check_token(self.database_url, self.path, token)
         self.path = ""
         headers = self.build_headers(token)
-        request_object = self.requests.patch(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+        request_object = self.requests.patch(
+            request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
         raise_detailed_error(request_object)
         return request_object.json()
 
@@ -164,9 +173,12 @@ class Database:
         raise_detailed_error(request_object)
         return request_object.json()
 
-    def stream(self, stream_handler, token=None, stream_id=None, is_async=True):
+    def stream(self, stream_handler, token=None, token_refreshable=False, stream_id=None, is_async=True, token_refresher=None):
+        if token_refreshable and not token_refresher:
+            raise ValueError(
+                "If token_refreshable is set to True, token_refresher must be a get function.")
         request_ref = self.build_request_url(token)
-        return Stream(request_ref, stream_handler, self.build_headers, stream_id, is_async)
+        return Stream(url=request_ref, stream_handler=stream_handler, build_headers=self.build_headers, stream_id=stream_id, is_async=is_async, token_refreshable=token_refreshable, token_refresher=token_refresher)
 
     def check_token(self, database_url, path, token):
         if token:
@@ -202,7 +214,8 @@ class Database:
         for pyre in pyres:
             new_list.append(pyre.item)
         # sort
-        data = sorted(dict(new_list).items(), key=lambda item: item[1][by_key], reverse=reverse)
+        data = sorted(dict(new_list).items(),
+                      key=lambda item: item[1][by_key], reverse=reverse)
         return PyreResponse(convert_to_pyre(data), origin.key())
 
     def get_etag(self, token=None, json_kwargs=None):
@@ -214,8 +227,8 @@ class Database:
         request_object = self.requests.get(request_ref, headers=headers)
         raise_detailed_error(request_object)
         return {
-           'ETag': request_object.headers['ETag'],
-           'value': request_object.json()
+            'ETag': request_object.headers['ETag'],
+            'value': request_object.json()
         }
 
     def conditional_set(self, data, etag, token=None, json_kwargs=None):
@@ -224,13 +237,14 @@ class Database:
         self.path = ""
         headers = self.build_headers(token)
         headers['if-match'] = etag
-        request_object = self.requests.put(request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
+        request_object = self.requests.put(
+            request_ref, headers=headers, data=json.dumps(data, **json_kwargs).encode("utf-8"))
 
         # ETag didn't match, so we should return the correct one for the user to try again
         if request_object.status_code == 412:
             return {
-               'ETag': request_object.headers['ETag'],
-               'value': request_object.json()
+                'ETag': request_object.headers['ETag'],
+                'value': request_object.json()
             }
 
         raise_detailed_error(request_object)
@@ -246,8 +260,8 @@ class Database:
         # ETag didn't match, so we should return the correct one for the user to try again
         if request_object.status_code == 412:
             return {
-               'ETag': request_object.headers['ETag'],
-               'value': request_object.json()
+                'ETag': request_object.headers['ETag'],
+                'value': request_object.json()
             }
 
         raise_detailed_error(request_object)

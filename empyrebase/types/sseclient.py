@@ -1,4 +1,5 @@
 import re
+import threading
 import time
 import warnings
 import six
@@ -11,7 +12,7 @@ import requests
 end_of_field = re.compile(r'\r\n\r\n|\r\r|\n\n')
 
 class SSEClient(object):
-    def __init__(self, url, session, build_headers, last_id=None, retry=3000, **kwargs):
+    def __init__(self, url, token_refreshable, token_refresher, session, build_headers, last_id=None, retry=3000, **kwargs):
         self.url = url
         self.last_id = last_id
         self.retry = retry
@@ -23,6 +24,13 @@ class SSEClient(object):
         self.start_time = None
         # Any extra kwargs will be fed into the requests.get call later.
         self.requests_kwargs = kwargs
+        self.token_refresher = token_refresher
+        self.token_refreshable = token_refreshable
+        self._new_iterator = True
+        
+        if token_refreshable:
+            reauth = threading.Thread(target=self._reauthorize_worker)
+            reauth.start()
 
         # The SSE spec requires making requests with Cache-Control: nocache
         if 'headers' not in self.requests_kwargs:
@@ -36,24 +44,51 @@ class SSEClient(object):
         self.buf = u''
 
         self._connect()
+        
+    def __refresh_token(self):
+        token = self.url.split("auth=")[1].split("&")[0]
+        new_token = self.token_refresher()
+        url = self.url.replace(token, new_token)
+        self.url = url
+        
+    def _reauthorize_worker(self, interval=15):
+        while True:
+            time.sleep(interval)
+            self.__refresh_token()
 
     def _connect(self):
-        if self.last_id:
-            self.requests_kwargs['headers']['Last-Event-ID'] = self.last_id
-        headers = self.build_headers()
-        self.requests_kwargs['headers'].update(headers)
-        # Use session if set.  Otherwise fall back to requests module.
-        self.requester = self.session or requests
-        self.resp = self.requester.get(self.url, stream=True, **self.requests_kwargs)
+        retries = 0
+        max_retries = 3
+        while retries < max_retries:
+            retries += 1
+            if self.last_id:
+                self.requests_kwargs['headers']['Last-Event-ID'] = self.last_id
+            headers = self.build_headers()
+            self.requests_kwargs['headers'].update(headers)
+            # Use session if set.  Otherwise fall back to requests module.
+            self.requester = self.session or requests
+            self.resp = self.requester.get(self.url, stream=True, **self.requests_kwargs)
+            self._new_iterator = True
+            self.resp_iterator = self.resp.iter_content(decode_unicode=True)
 
-        self.resp_iterator = self.resp.iter_content(decode_unicode=True)
-
-        # TODO: Ensure we're handling redirects.  Might also stick the 'origin'
-        # attribute on Events like the Javascript spec requires.
+            # TODO: Ensure we're handling redirects.  Might also stick the 'origin'
+            # attribute on Events like the Javascript spec requires.
+            if self.resp.status_code == 401 and self.token_refreshable: # Unauthorized with a chance for authorization.
+                print(f"Failed to start streaming, trying again ({retries}/{max_retries})...")
+                old_url = self.url
+                self.__refresh_token()
+                if self.url != old_url:
+                    continue
+            else: # No need to retry
+                retries = max_retries
+        
         self.resp.raise_for_status()
+        retries = 0
 
     def _event_complete(self):
-        return re.search(end_of_field, self.buf) is not None
+        complete = re.search(end_of_field, self.buf)
+        # print(complete)
+        return complete is not None
 
     def __iter__(self):
         return self
@@ -61,6 +96,10 @@ class SSEClient(object):
     def __next__(self):
         while not self._event_complete():
             try:
+                if self._new_iterator and self.resp_iterator:
+                    self._new_iterator = False  # Reset flag
+                    self.resp_iterator = self.resp.iter_content(decode_unicode=True)  # Ensure reset
+
                 nextchar = next(self.resp_iterator)
                 self.buf += nextchar
             except (StopIteration, requests.RequestException):
@@ -71,6 +110,7 @@ class SSEClient(object):
                 # if we have half a message we should throw it out.
                 head, sep, tail = self.buf.rpartition('\n')
                 self.buf = head + sep
+                self._new_iterator = True
                 continue
 
         split = re.split(end_of_field, self.buf)

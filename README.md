@@ -348,6 +348,19 @@ my_stream = db.child("posts").stream(stream_handler, stream_id="new_posts")
 my_stream.close()
 ```
 
+#### Update the auth token mid stream
+```python
+def token_refresher():
+    return your_auth_token # Implement a way to actually update your_auth_token using auth.refresh() outside this function.
+
+def stream_handler(message):
+    print(message["event"]) # put
+    print(message["path"]) # /-K7yGTTEp7O549EzTYtI
+    print(message["data"]) # {'title': 'empyrebase', "body": "etc..."}
+
+my_stream = db.child("posts").stream(stream_handler, token="your_auth_token", token_refreshable=True, token_refresher=token_refresher)
+```
+
 ### Complex Queries
 
 Queries can be built by chaining multiple query parameters together.

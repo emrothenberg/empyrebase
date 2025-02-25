@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from empyrebase.utils import raise_detailed_error, replace_all
 
 
@@ -9,8 +9,7 @@ class Firestore:
         self.project_id = project_id
         self.firebase_path = firebase_path
         self.database_name = database_name
-        self.base_path = f"firestore.googleapis.com/v1/projects/{
-            project_id}/databases/{database_name}/documents/{firebase_path}"
+        self.base_path = f"firestore.googleapis.com/v1/projects/{project_id}/databases/{database_name}/documents/{firebase_path}"
         self.headers = {}
         self.requests = requests
         if auth_id:
@@ -64,8 +63,7 @@ class Firestore:
 
         response = self.requests.post(request_url, headers=self.headers, json={
             "documents": [
-                f"projects/{self.project_id}/databases/{
-                    self.database_name}/documents/{document.lstrip('/')}"
+                f"projects/{self.project_id}/databases/{self.database_name}/documents/{document.lstrip('/')}"
                 for document in documents
             ]
         })
@@ -170,7 +168,7 @@ class Firestore:
         return ({"stringValue": value} if isinstance(value, str)
                 else {"integerValue": value} if isinstance(value, int)
                 else {"booleanValue": value} if isinstance(value, bool)
-                else {"timestampValue": value.isoformat()} if isinstance(value, datetime)
+                else {"timestampValue": value.replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if isinstance(value, datetime)
                 else {"mapValue": {"fields": self._dict_to_doc(value)}} if isinstance(value, dict)
                 else {"arrayValue": {"values": [self.__convert_to_fb(v) for v in value]}} if isinstance(value, list)
                 else {"nullValue": None} if value == None
