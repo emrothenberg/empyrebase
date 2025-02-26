@@ -173,12 +173,12 @@ class Database:
         raise_detailed_error(request_object)
         return request_object.json()
 
-    def stream(self, stream_handler, token=None, token_refreshable=False, stream_id=None, is_async=True, token_refresher=None):
+    def stream(self, stream_handler, token=None, token_refreshable=False, stream_id=None, is_async=True, token_refresher=None, max_retries=3):
         if token_refreshable and not token_refresher:
             raise ValueError(
                 "If token_refreshable is set to True, token_refresher must be a get function.")
         request_ref = self.build_request_url(token)
-        return Stream(url=request_ref, stream_handler=stream_handler, build_headers=self.build_headers, stream_id=stream_id, is_async=is_async, token_refreshable=token_refreshable, token_refresher=token_refresher)
+        return Stream(url=request_ref, stream_handler=stream_handler, build_headers=self.build_headers, stream_id=stream_id, is_async=is_async, token_refreshable=token_refreshable, token_refresher=token_refresher, max_retries=max_retries)
 
     def check_token(self, database_url, path, token):
         if token:

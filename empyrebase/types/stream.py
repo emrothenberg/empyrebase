@@ -6,7 +6,7 @@ from .keep_auth_session import KeepAuthSession
 
 
 class Stream:
-    def __init__(self, url, stream_handler, build_headers, stream_id, is_async, token_refreshable, token_refresher):
+    def __init__(self, url, stream_handler, build_headers, stream_id, is_async, token_refreshable, token_refresher, max_retries):
         self.build_headers = build_headers
         self.url = url
         self.stream_handler = stream_handler
@@ -15,6 +15,7 @@ class Stream:
         self.thread = None
         self.token_refresher = token_refresher
         self.token_refreshable = token_refreshable
+        self.max_retries = max_retries
 
         if is_async:
             self.start()
@@ -34,7 +35,7 @@ class Stream:
         return self
 
     def start_stream(self):
-        self.sse = ClosableSSEClient(self.url, session=self.make_session(), build_headers=self.build_headers, token_refreshable=self.token_refreshable, token_refresher=self.token_refresher)
+        self.sse = ClosableSSEClient(self.url, session=self.make_session(), build_headers=self.build_headers, token_refreshable=self.token_refreshable, token_refresher=self.token_refresher, max_retries=self.max_retries)
         for msg in self.sse:
             if msg:
                 msg_data = json.loads(msg.data)

@@ -358,7 +358,7 @@ def stream_handler(message):
     print(message["path"]) # /-K7yGTTEp7O549EzTYtI
     print(message["data"]) # {'title': 'empyrebase', "body": "etc..."}
 
-my_stream = db.child("posts").stream(stream_handler, token="your_auth_token", token_refreshable=True, token_refresher=token_refresher)
+my_stream = db.child("posts").stream(stream_handler, token="your_auth_token", token_refreshable=True, token_refresher=token_refresher, max_retries=3) # max_retries is optional and defaults to 3. Maximum retries to reauth stream before an exception is raised.
 ```
 
 ### Complex Queries

@@ -12,7 +12,7 @@ import requests
 end_of_field = re.compile(r'\r\n\r\n|\r\r|\n\n')
 
 class SSEClient(object):
-    def __init__(self, url, token_refreshable, token_refresher, session, build_headers, last_id=None, retry=3000, **kwargs):
+    def __init__(self, url, token_refreshable, token_refresher, session, build_headers, max_retries, last_id=None, retry=3000, **kwargs):
         self.url = url
         self.last_id = last_id
         self.retry = retry
@@ -27,6 +27,7 @@ class SSEClient(object):
         self.token_refresher = token_refresher
         self.token_refreshable = token_refreshable
         self._new_iterator = True
+        self.max_retries = max_retries
         
         if token_refreshable:
             reauth = threading.Thread(target=self._reauthorize_worker)
@@ -58,8 +59,7 @@ class SSEClient(object):
 
     def _connect(self):
         retries = 0
-        max_retries = 3
-        while retries < max_retries:
+        while retries < self.max_retries:
             retries += 1
             if self.last_id:
                 self.requests_kwargs['headers']['Last-Event-ID'] = self.last_id
@@ -74,13 +74,13 @@ class SSEClient(object):
             # TODO: Ensure we're handling redirects.  Might also stick the 'origin'
             # attribute on Events like the Javascript spec requires.
             if self.resp.status_code == 401 and self.token_refreshable: # Unauthorized with a chance for authorization.
-                print(f"Failed to start streaming, trying again ({retries}/{max_retries})...")
+                print(f"Failed to start streaming, trying again ({retries}/{self.max_retries})...")
                 old_url = self.url
                 self.__refresh_token()
                 if self.url != old_url:
                     continue
             else: # No need to retry
-                retries = max_retries
+                retries = self.max_retries
         
         self.resp.raise_for_status()
         retries = 0
