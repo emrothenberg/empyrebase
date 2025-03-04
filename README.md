@@ -525,7 +525,6 @@ firestore.authorize("auth_id_token")
 ### CRUD Operations
 #### Create a Document
 Creates a new document.
-Alias to: [`firestore.update_document("collection/document", {})`](#update-a-document)
 ```python
 data = {"name": "John Doe", "age": 30} # Optional
 firestore.create_document("users/user_id", data)
