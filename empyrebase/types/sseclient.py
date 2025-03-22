@@ -47,7 +47,10 @@ class SSEClient(object):
         self._connect()
         
     def __refresh_token(self):
-        token = self.url.split("auth=")[1].split("&")[0]
+        try:
+            token = self.url.split("auth=")[1].split("&")[0]
+        except IndexError:
+            raise ValueError("Could not find token in URL. Please make sure you provided an auth token.")
         new_token = self.token_refresher()
         url = self.url.replace(token, new_token)
         self.url = url

@@ -93,7 +93,7 @@ class Firestore:
         if not _new:
             existing_data = self.get_document(document, True)
             data = {**existing_data, **data}
-            
+
         firestore_data = self._dict_to_doc(data)
 
         firestore_data = {k: v for k,
@@ -167,8 +167,8 @@ class Firestore:
 
     def __convert_to_fb(self, value):
         return ({"stringValue": value} if isinstance(value, str)
-                else {"integerValue": value} if isinstance(value, int)
                 else {"booleanValue": value} if isinstance(value, bool)
+                else {"integerValue": value} if isinstance(value, int)
                 else {"timestampValue": value.replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if isinstance(value, datetime)
                 else {"mapValue": {"fields": self._dict_to_doc(value)}} if isinstance(value, dict)
                 else {"arrayValue": {"values": [self.__convert_to_fb(v) for v in value]}} if isinstance(value, list)
