@@ -1,6 +1,6 @@
 # Empyrebase
 
-A simple python wrapper for the [Firebase API](https://firebase.google.com).
+A simple python wrapper for the [Firebase API](https://firebase.google.com). Supports Realtime DB, Firestore, Auth and Storage.
 
 ## Installation
 
@@ -31,6 +31,12 @@ config = {
 firebase = empyrebase.initialize_app(config)
 ```
 
+This will automatically check for the latest version on PyPI so that you don't miss out on new features. To skip version check:
+
+```
+firebase = empyrebase.initialize_app(config, skip_version_check=True)
+```
+
 We can optionally add a [service account credential](https://firebase.google.com/docs/server/setup#prerequisites) to our
 configuration that will allow our server to authenticate with Firebase as an admin and disregard any security rules.
 
@@ -55,21 +61,21 @@ Adding a service account will authenticate as an admin by default for all databa
 
 An empyrebase app can use multiple Firebase services.
 
-```firebase.auth()``` - [Authentication](#authentication)
+`firebase.auth()` - [Authentication](#authentication)
 
-```firebase.database()``` - [Database](#database)
+`firebase.database()` - [Database](#database)
 
-```firebase.storage()``` - [Storage](#storage)
+`firebase.storage()` - [Storage](#storage)
 
-```firebase.firestore()``` - [Firestore](#firestore)
+`firebase.firestore()` - [Firestore](#firestore)
 
 Check out the documentation for each service for further details.
 
 ## Authentication
 
-The ```sign_in_with_email_and_password()``` method will return user data including a token you can use to adhere to security rules.
+The `sign_in_with_email_and_password()` method will return user data including a token you can use to adhere to security rules.
 
-Each of the following methods accepts a user token: ```get()```, ```push()```, ```set()```, ```update()```, ```remove()``` and ```stream()```.
+Each of the following methods accepts a user token: `get()`, `push()`, `set()`, `update()`, `remove()` and `stream()`.
 
 ```python
 # Get a reference to the auth service
@@ -102,6 +108,7 @@ results = db.child("users").push(data, user['idToken'])
 ### Token expiry
 
 A user's idToken expires after 1 hour, so be sure to use the user's refreshToken to avoid stale tokens.
+
 ```
 user = auth.sign_in_with_email_and_password(email, password)
 # before the 1 hour expiry:
@@ -113,14 +120,19 @@ user['idToken']
 ### Custom tokens
 
 You can also create users using [custom tokens](https://firebase.google.com/docs/auth/server/create-custom-tokens), for example:
+
 ```
 token = auth.create_custom_token("your_custom_id")
 ```
+
 You can also pass in additional claims.
+
 ```
 token_with_additional_claims = auth.create_custom_token("your_custom_id", {"premium_account": True})
 ```
+
 You can then send these tokens to the client to sign in, or sign in as the user on the server.
+
 ```
 user = auth.sign_in_with_custom_token(token)
 ```
@@ -132,6 +144,7 @@ user = auth.sign_in_with_custom_token(token)
 ```python
 auth.create_user_with_email_and_password(email, password)
 ```
+
 Note: Make sure you have the Email/password provider enabled in your Firebase dashboard under Auth -> Sign In Method.
 
 #### Verifying emails
@@ -147,22 +160,26 @@ auth.send_password_reset_email("email")
 ```
 
 #### Get account information
+
 ```python
 auth.get_account_info(user['idToken'])
 ```
 
 #### Refreshing tokens
+
 ```python
 user = auth.refresh(user['refreshToken'])
 ```
+
 #### Delete account
+
 ```python
 auth.delete_user_account(user['idToken'])
 ```
 
 ## Database
 
-You can build paths to your data by using the ```child()``` method.
+You can build paths to your data by using the `child()` method.
 
 ```python
 db = firebase.database()
@@ -173,7 +190,7 @@ db.child("users").child("Morty")
 
 #### push
 
-To save data with a unique, auto-generated, timestamp-based key, use the ```push()``` method.
+To save data with a unique, auto-generated, timestamp-based key, use the `push()` method.
 
 ```python
 data = {"name": "Mortimer 'Morty' Smith"}
@@ -182,7 +199,7 @@ db.child("users").push(data)
 
 #### set
 
-To create your own keys use the ```set()``` method. The key in the example below is "Morty".
+To create your own keys use the `set()` method. The key in the example below is "Morty".
 
 ```python
 data = {"name": "Mortimer 'Morty' Smith"}
@@ -191,7 +208,7 @@ db.child("users").child("Morty").set(data)
 
 #### update
 
-To update data for an existing entry use the ```update()``` method.
+To update data for an existing entry use the `update()` method.
 
 ```python
 db.child("users").child("Morty").update({"name": "Mortiest Morty"})
@@ -199,7 +216,7 @@ db.child("users").child("Morty").update({"name": "Mortiest Morty"})
 
 #### remove
 
-To delete data for an existing entry use the ```remove()``` method.
+To delete data for an existing entry use the `remove()` method.
 
 ```python
 db.child("users").child("Morty").remove()
@@ -207,7 +224,7 @@ db.child("users").child("Morty").remove()
 
 #### multi-location updates
 
-You can also perform [multi-location updates](https://www.firebase.com/blog/2015-09-24-atomic-writes-and-more.html) with the ```update()``` method.
+You can also perform [multi-location updates](https://www.firebase.com/blog/2015-09-24-atomic-writes-and-more.html) with the `update()` method.
 
 ```python
 data = {
@@ -222,7 +239,7 @@ data = {
 db.update(data)
 ```
 
-To perform multi-location writes to new locations we can use the ```generate_key()``` method.
+To perform multi-location writes to new locations we can use the `generate_key()` method.
 
 ```python
 data = {
@@ -236,6 +253,7 @@ data = {
 
 db.update(data)
 ```
+
 #### Conditional Requests
 
 It's possible to do conditional sets and removes by using the `conditional_set()` and `conitional_remove()` methods respectively. You can read more about conditional requests in Firebase [here](https://firebase.google.com/docs/reference/rest/database/#section-conditional-requests).
@@ -264,6 +282,7 @@ if type(response) is dict and "ETag" in response:
 else:
     print("We removed the data successfully!")
 ```
+
 Here's an example of looping to increase age by 1:
 
 ```python
@@ -276,7 +295,8 @@ while type(etag) is dict and "ETag" in etag:
 ### Retrieve Data
 
 #### val
-Queries return a PyreResponse object. Calling ```val()``` on these objects returns the query data.
+
+Queries return a PyreResponse object. Calling `val()` on these objects returns the query data.
 
 ```
 users = db.child("users").get()
@@ -284,7 +304,8 @@ print(users.val()) # {"Morty": {"name": "Mortimer 'Morty' Smith"}, "Rick": {"nam
 ```
 
 #### key
-Calling ```key()``` returns the key for the query data.
+
+Calling `key()` returns the key for the query data.
 
 ```
 user = db.child("users").get()
@@ -292,7 +313,8 @@ print(user.key()) # users
 ```
 
 #### each
-Returns a list of objects on each of which you can call ```val()``` and ```key()```.
+
+Returns a list of objects on each of which you can call `val()` and `key()`.
 
 ```
 all_users = db.child("users").get()
@@ -303,7 +325,7 @@ for user in all_users.each():
 
 #### get
 
-To return data from a path simply call the ```get()``` method.
+To return data from a path simply call the `get()` method.
 
 ```python
 all_users = db.child("users").get()
@@ -311,17 +333,17 @@ all_users = db.child("users").get()
 
 #### shallow
 
-To return just the keys at a particular path use the ```shallow()``` method.
+To return just the keys at a particular path use the `shallow()` method.
 
 ```python
 all_user_ids = db.child("users").shallow().get()
 ```
 
-Note: ```shallow()``` can not be used in conjunction with any complex queries.
+Note: `shallow()` can not be used in conjunction with any complex queries.
 
 #### streaming
 
-You can listen to live changes to your data with the ```stream()``` method.
+You can listen to live changes to your data with the `stream()` method.
 
 ```python
 def stream_handler(message):
@@ -336,7 +358,7 @@ You should at least handle `put` and `patch` events. Refer to ["Streaming from t
 
 [streaming]: https://firebase.google.com/docs/reference/rest/database/#section-streaming
 
-You can also add a ```stream_id``` to help you identify a stream if you have multiple running:
+You can also add a `stream_id` to help you identify a stream if you have multiple running:
 
 ```
 my_stream = db.child("posts").stream(stream_handler, stream_id="new_posts")
@@ -349,6 +371,7 @@ my_stream.close()
 ```
 
 #### Update the auth token mid stream
+
 ```python
 def token_refresher():
     return your_auth_token # Implement a way to actually update your_auth_token using auth.refresh() outside this function.
@@ -368,15 +391,17 @@ Queries can be built by chaining multiple query parameters together.
 ```python
 users_by_name = db.child("users").order_by_child("name").limit_to_first(3).get()
 ```
+
 This query will return the first three users ordered by name.
 
 #### order_by_child
 
-We begin any complex query with ```order_by_child()```.
+We begin any complex query with `order_by_child()`.
 
 ```python
 users_by_name = db.child("users").order_by_child("name").get()
 ```
+
 This query will return users ordered by name.
 
 #### equal_to
@@ -386,6 +411,7 @@ Return data with a specific value.
 ```python
 users_by_score = db.child("users").order_by_child("score").equal_to(10).get()
 ```
+
 This query will return users with a score of 10.
 
 #### start_at and end_at
@@ -395,6 +421,7 @@ Specify a range in your data.
 ```python
 users_by_score = db.child("users").order_by_child("score").start_at(3).end_at(10).get()
 ```
+
 This query returns users ordered by score and with a score between 3 and 10.
 
 #### limit_to_first and limit_to_last
@@ -404,11 +431,12 @@ Limits data returned.
 ```python
 users_by_score = db.child("users").order_by_child("score").limit_to_first(5).get()
 ```
+
 This query returns the first five users ordered by score.
 
 #### order_by_key
 
-When using ```order_by_key()``` to sort your data, data is returned in ascending order by key.
+When using `order_by_key()` to sort your data, data is returned in ascending order by key.
 
 ```python
 users_by_key = db.child("users").order_by_key().get()
@@ -416,12 +444,11 @@ users_by_key = db.child("users").order_by_key().get()
 
 #### order_by_value
 
-When using ```order_by_value()```, children are ordered by their value.
+When using `order_by_value()`, children are ordered by their value.
 
 ```python
 users_by_value = db.child("users").order_by_value().get()
 ```
-
 
 ## Storage
 
@@ -467,6 +494,7 @@ storage.child("images/example.jpg").get_url(user["idToken"])
 ### delete
 
 The delete method takes the path to the saved database file and user token.
+
 ```
 storage.delete("images/example.jpg",user["idToken"])
 ```
@@ -475,7 +503,7 @@ storage.delete("images/example.jpg",user["idToken"])
 
 #### generate_key
 
-```db.generate_key()``` is an implementation of Firebase's [key generation algorithm](https://www.firebase.com/blog/2015-02-11-firebase-unique-identifiers.html).
+`db.generate_key()` is an implementation of Firebase's [key generation algorithm](https://www.firebase.com/blog/2015-02-11-firebase-unique-identifiers.html).
 
 See multi-location updates for a potential use case.
 
@@ -484,7 +512,7 @@ See multi-location updates for a potential use case.
 Sometimes we might want to sort our data multiple times. For example, we might want to retrieve all articles written between a
 certain date then sort those articles based on the number of likes.
 
-Currently the REST API only allows us to sort our data once, so the ```sort()``` method bridges this gap.
+Currently the REST API only allows us to sort our data once, so the `sort()` method bridges this gap.
 
 ```python
 articles = db.child("articles").order_by_child("date").start_at(startDate).end_at(endDate).get()
@@ -517,14 +545,31 @@ firestore = firebase.firestore(firebase_path=firebase_path, database_name=databa
 ```
 
 ### Authorization
+
 Authorize Firestore using an authentication token. Firestore can be authorized at any time.
+
 ```python
 firestore.authorize("auth_id_token")
 ```
 
 ### CRUD Operations
+
+#### Navigation
+
+Navigation can be done either using absolute paths using `firestore.get_document("/path/to/document")` or using collection-document pairs, as follows:
+
+```python
+collection = firestore.collection("collection")
+document1 = collection.get_document("document1")
+document2 = firestore.collection.document("document2").get_document()
+```
+
+The same logic applies to creating, updating and listing documents, but not for batch document get. Due to Firebase's API structure, batch_get_document must always receive absolute paths.
+
 #### Create a Document
+
 Creates a new document.
+
 ```python
 data = {"name": "John Doe", "age": 30} # Optional
 firestore.create_document("users/user_id", data)
@@ -533,6 +578,7 @@ firestore.create_document("users/user_id", data) # Data is required, but can be 
 ```
 
 #### Retrieve a Document
+
 Fetches a document.
 
 ```python
@@ -541,13 +587,17 @@ print(document)
 ```
 
 #### Batch Get Documents
+
 Fetch multiple documents in one batch.
+
 ```python
 documents = firestore.batch_get_documents(["users/user_id1", "users/user_id2"])
 ```
 
 #### Run Query
+
 Run a structured query against a collection.
+
 ```python
 query = {"field": "name", "value": "John Doe"}
 results = firestore.run_query("users", query)
@@ -575,4 +625,16 @@ Lists all documents in a collection.
 
 ```python
 documents = firestore.list_documents("users")
+```
+
+#### Server timestamp
+
+In order to get the server timestamp in a field value use `firestore.SERVER_TIMESTAMP`:
+
+```python
+data = {
+    "name": "John Doe",
+    "age": 30,
+    "createdAt": firestore.SERVER_TIMESTAMP,
+}
 ```

@@ -16,3 +16,4 @@ tests/config.py
 venv
 .pytest_cache
 temp.py
+empyrebase/types/private.py

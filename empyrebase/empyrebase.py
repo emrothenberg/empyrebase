@@ -1,12 +1,30 @@
 import requests
 from requests.adapters import HTTPAdapter
+from packaging.version import parse as parse_version
 
 from oauth2client.service_account import ServiceAccountCredentials
 
 from .services import Auth, Database, Firestore, Storage
 
+PACKAGE_NAME = "empyrebase"
+CURRENT_VERSION = "1.2.0"
 
-def initialize_app(config):
+def warn_if_outdated():
+    try:
+        res = requests.get(f"https://pypi.org/pypi/{PACKAGE_NAME}/json", timeout=3)
+        res.raise_for_status()
+        latest_version = res.json()["info"]["version"]
+
+        if parse_version(CURRENT_VERSION) < parse_version(latest_version):
+            import logging
+            logging.warning(f"You are using {PACKAGE_NAME} version {CURRENT_VERSION}, "
+                            f"but {latest_version} is already published on PyPI.")
+    except Exception as e:
+        print(f"Could not check PyPI for version: {e}")
+        
+def initialize_app(config, skip_version_check=False):
+    if not skip_version_check:
+        warn_if_outdated()
     return Firebase(config)
 
 

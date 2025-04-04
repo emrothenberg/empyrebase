@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
+from empyrebase.types.firestore import Document
 from empyrebase.utils import raise_detailed_error, replace_all
 
 
 class Firestore:
     """Firebase Firestore"""
+
+    SERVER_TIMESTAMP = type("SERVER_TIMESTAMP", (), {})()
 
     def __init__(self, requests, project_id, firebase_path, database_name="(default)", auth_id=None):
         self.project_id = project_id
@@ -18,7 +21,42 @@ class Firestore:
     def authorize(self, auth_id: str):
         self.headers["Authorization"] = f"Bearer {auth_id}"
 
-    def create_document(self, document, data={}):
+    def collection(self, collection: str):
+        """Returns a collection reference
+
+        Args:
+            collection (str): Collection path relative to the base path passed on initialization
+        """
+
+        path_parts = self.firebase_path.strip("/").split("/")
+        current_len = len(path_parts)
+        if current_len > 0 and path_parts[0] and current_len % 2 != 0:
+            raise ValueError(
+                "Collection must be an odd child. Did you mean to get a document ref?")
+
+        new_path = f"{self.firebase_path}/{collection}"
+        new_path = replace_all(new_path, '//', '/')
+
+        return Firestore(self.requests, self.project_id, new_path, self.database_name, self.headers.get("Authorization", "").replace("Bearer ", ""))
+
+    def document(self, document: str):
+        """Returns a document reference
+
+        Args:
+            document (str): Document path relative to the base path passed on initialization
+        """
+
+        path_parts = self.firebase_path.strip("/").split("/")
+        current_len = len(path_parts)
+        if current_len > 0 and path_parts[0] and current_len % 2 == 0:
+            raise ValueError(
+                "Document must be an even child. Did you mean to get a collection ref?")
+
+        new_path = f"{self.firebase_path}/{document}"
+        new_path = replace_all(new_path, '//', '/')
+        return Firestore(self.requests, self.project_id, new_path, self.database_name, self.headers.get("Authorization", "").replace("Bearer ", ""))
+
+    def create_document(self, document="", data={}):
         """
         Creates a new document in the Firestore database.
 
@@ -29,13 +67,25 @@ class Firestore:
 
         return self.update_document(document, data, _new=True)
 
-    def get_document(self, document: str, _during_update: bool = False):
+    def get_document(self, document: str = "", _during_update: bool = False):
         """Fetches the document from firestore database
 
         Args:
             document (str): document path relative to the base path passed on initialization
         """
-        request_url = f"{self.base_path}/{document}"
+
+        if not document and not self.firebase_path:
+            raise ValueError("Document path is required")
+
+        path_parts = "/".join([self.firebase_path, document]).strip().strip("/").split("/")
+        current_len = len(path_parts)
+        if current_len > 0 and path_parts[0] and current_len % 2 != 0:
+            raise ValueError("Document ref must be an even child.")
+
+        request_url = f"{self.base_path}"
+        if document:
+            request_url += f"/{document}"
+
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -44,7 +94,9 @@ class Firestore:
         if response.status_code == 200:
             data = response.json().get('fields', {})
             cleaned = self._doc_to_dict(data)
-            return cleaned
+            return Document(cleaned, True)
+        elif response.status_code == 404:
+            return Document({}, False)
         else:
             if _during_update:
                 return {}
@@ -89,7 +141,7 @@ class Firestore:
         else:
             raise_detailed_error(response)
 
-    def update_document(self, document, data, _new=False):
+    def update_document(self, document="", data={}, _new=False):
         if not _new:
             existing_data = self.get_document(document, True)
             data = {**existing_data, **data}
@@ -123,13 +175,17 @@ class Firestore:
         if response.status_code != 200:
             raise_detailed_error(response)
 
-    def list_documents(self, collection: str):
+    def list_documents(self, collection: str=""):
         """Lists all documents in a collection
 
         Args:
             collection (str): Collection path relative to the base path passed on initialization
         """
-        request_url = f"{self.base_path}/{collection}"
+        
+        request_url = {self.base_path}
+        if collection:
+            request_url += f"/{collection}"
+            
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -167,6 +223,7 @@ class Firestore:
 
     def __convert_to_fb(self, value):
         return ({"stringValue": value} if isinstance(value, str)
+                else {"timestampValue": datetime.now().replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if value == self.SERVER_TIMESTAMP
                 else {"booleanValue": value} if isinstance(value, bool)
                 else {"integerValue": value} if isinstance(value, int)
                 else {"timestampValue": value.replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if isinstance(value, datetime)
