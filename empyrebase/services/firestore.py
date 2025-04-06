@@ -182,12 +182,12 @@ class Firestore:
             collection (str): Collection path relative to the base path passed on initialization
         """
         
-        request_url = {self.base_path}
+        request_url = self.base_path
         if collection:
             request_url += f"/{collection}"
             
         request_url = replace_all(request_url, '//', '/')
-        request_url = "https://" + request_url
+        request_url = f"https://{request_url}"
 
         response = self.requests.get(request_url, headers=self.headers)
         if response.status_code == 200:

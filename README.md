@@ -2,6 +2,8 @@
 
 A simple python wrapper for the [Firebase API](https://firebase.google.com). Supports Realtime DB, Firestore, Auth and Storage.
 
+[![PyPI Downloads](https://static.pepy.tech/badge/empyrebase)](https://pepy.tech/projects/empyrebase)
+
 ## Installation
 
 ```shell
