@@ -1,20 +1,66 @@
 from datetime import datetime, timezone
-from empyrebase.types.firestore import Document
+from itertools import zip_longest
+from typing import List, Literal
+from empyrebase.types.firestore import Document, Filter, OrderBy, StructuredQuery
+from empyrebase.types.private import Private
 from empyrebase.utils import raise_detailed_error, replace_all
+from logging import getLogger
 
 
 class Firestore:
     """Firebase Firestore"""
 
     SERVER_TIMESTAMP = type("SERVER_TIMESTAMP", (), {})()
+    project_id: str
+    database_name: str
+    headers: dict
+    requests: object
+    firebase_path: Private[str]
+    base_path: Private[str]
+    __query: Private[StructuredQuery]
+    __collections: Private[List[str]]
+    __documents: Private[List[str]]
 
-    def __init__(self, requests, project_id, firebase_path, database_name="(default)", auth_id=None):
+    def __init__(
+        self,
+        requests,
+        project_id: str,
+        database_name: str = "(default)",
+        auth_id: str | None = None,
+        _collections: List[str] = [],
+        _documents: List[str] = [],
+        _query: StructuredQuery | None = None
+    ):
+        firebase_path = ""
+
         self.project_id = project_id
-        self.firebase_path = firebase_path
         self.database_name = database_name
-        self.base_path = f"firestore.googleapis.com/v1/projects/{project_id}/databases/{database_name}/documents/{firebase_path}"
         self.headers = {}
         self.requests = requests
+        self.__collections = Private(_collections.copy())
+        self.__documents = Private(_documents.copy())
+        self.__project_path = Private(
+            f"projects/{project_id}/databases/{database_name}/documents")
+
+        while len(_collections) > 0 or len(_documents) > 0:
+            if len(_collections) > 0:
+                firebase_path += f"/{_collections.pop(0)}"
+            if len(_documents) > 0:
+                firebase_path += f"/{_documents.pop(0)}"
+
+        self.firebase_path = Private(firebase_path.strip("/"))
+        self.base_path = Private(
+            f"firestore.googleapis.com/v1/{self.__project_path.get()}")
+
+        if not _query:
+            _query = StructuredQuery(
+                collection="",
+            )
+
+        _query.collection = replace_all(
+            f"{self.__project_path.get()}/{firebase_path}", "//", "/")
+        self.__query = Private(_query)
+
         if auth_id:
             self.headers["Authorization"] = f"Bearer {auth_id}"
 
@@ -28,16 +74,42 @@ class Firestore:
             collection (str): Collection path relative to the base path passed on initialization
         """
 
-        path_parts = self.firebase_path.strip("/").split("/")
-        current_len = len(path_parts)
-        if current_len > 0 and path_parts[0] and current_len % 2 != 0:
+        collections = self.__collections.get()
+        documents = self.__documents.get()
+
+        path_parts = collection.split("/")
+
+        segments_1 = path_parts[::2]
+        try:
+            segments_2 = path_parts[1::2]
+        except IndexError:
+            segments_2 = []
+
+        if len(collections) == len(documents):
+            collections.extend(segments_1)
+            documents.extend(segments_2)
+        else:
+            collections.extend(segments_2)
+            documents.extend(segments_1)
+
+        if len(collections) == len(documents):
             raise ValueError(
                 "Collection must be an odd child. Did you mean to get a document ref?")
 
-        new_path = f"{self.firebase_path}/{collection}"
-        new_path = replace_all(new_path, '//', '/')
+        query = self.__query.get()
+        query.collection = collections[-1]
 
-        return Firestore(self.requests, self.project_id, new_path, self.database_name, self.headers.get("Authorization", "").replace("Bearer ", ""))
+        collection_ref = Firestore(
+            self.requests,
+            self.project_id,
+            self.database_name,
+            self.headers.get("Authorization", "").replace("Bearer ", ""),
+            _collections=collections,
+            _documents=documents,
+            _query=query,
+        )
+
+        return collection_ref
 
     def document(self, document: str):
         """Returns a document reference
@@ -46,15 +118,36 @@ class Firestore:
             document (str): Document path relative to the base path passed on initialization
         """
 
-        path_parts = self.firebase_path.strip("/").split("/")
-        current_len = len(path_parts)
-        if current_len > 0 and path_parts[0] and current_len % 2 == 0:
+        collections = self.__collections.get()
+        documents = self.__documents.get()
+
+        path_parts = document.split("/")
+        segments_1 = path_parts[::2]
+        try:
+            segments_2 = path_parts[1::2]
+        except IndexError:
+            segments_2 = []
+
+        if len(collections) == len(documents):
+            collections.extend(segments_1)
+            documents.extend(segments_2)
+        else:
+            collections.extend(segments_2)
+            documents.extend(segments_1)
+
+        if len(collections) > len(documents):
             raise ValueError(
                 "Document must be an even child. Did you mean to get a collection ref?")
 
-        new_path = f"{self.firebase_path}/{document}"
-        new_path = replace_all(new_path, '//', '/')
-        return Firestore(self.requests, self.project_id, new_path, self.database_name, self.headers.get("Authorization", "").replace("Bearer ", ""))
+        return Firestore(
+            self.requests,
+            self.project_id,
+            self.database_name,
+            self.headers.get("Authorization", "").replace("Bearer ", ""),
+            _collections=collections,
+            _documents=documents,
+            _query=self.__query.get(),
+        )
 
     def create_document(self, document="", data={}):
         """
@@ -74,15 +167,19 @@ class Firestore:
             document (str): document path relative to the base path passed on initialization
         """
 
-        if not document and not self.firebase_path:
+        documents = self.__documents.get()
+        collections = self.__collections.get()
+
+        if not document and not documents:
             raise ValueError("Document path is required")
 
-        path_parts = "/".join([self.firebase_path, document]).strip().strip("/").split("/")
-        current_len = len(path_parts)
-        if current_len > 0 and path_parts[0] and current_len % 2 != 0:
+        if document:
+            documents.append(document)
+
+        if len(collections) != len(documents):
             raise ValueError("Document ref must be an even child.")
 
-        request_url = f"{self.base_path}"
+        request_url = self.base_path.get() + f"/{self.firebase_path.get()}"
         if document:
             request_url += f"/{document}"
 
@@ -124,22 +221,107 @@ class Firestore:
         else:
             raise_detailed_error(response)
 
-    def run_query(self, collection: str, structured_query: dict):
+    # Query methods
+    def run_query(self):
         """Runs a structured query against the collection
 
         Args:
             collection (str): Collection path relative to the base path passed on initialization
             structured_query (dict): Firestore structured query object
         """
-        request_url = f"{self.base_path}/{collection}:runQuery"
+
+        collection = self.firebase_path.get()
+        if len(collection.split("/")) % 2 == 0:
+            raise ValueError(
+                "Cannoot run query on a document. Use collection() instead.")
+
+        request_url = f"{self.base_path.get()}/{'/'.join(self.firebase_path.get().split('/')[:-1])}/:runQuery"
         request_url = replace_all(request_url, '//', '/')
+        request_url = "https://" + request_url
+
+        query = self.__query.get().to_dict()
         response = self.requests.post(
-            request_url, headers=self.headers, json=structured_query)
+            request_url, headers=self.headers, json=query)
+
         if response.status_code == 200:
             results = response.json()
-            return [self._doc_to_dict(result['document']['fields']) for result in results if 'document' in result]
+            print(results)
+            return [Document(self._doc_to_dict(result['document']['fields']), True) for result in results if 'document' in result]
         else:
             raise_detailed_error(response)
+
+    def where(self, field: str, op: str, value, new_filter: bool = False):
+        """Creates a structured query filter
+
+        Args:
+            field (str): Field to filter on
+            op (str): Operator to use for filtering
+            value: Value to compare against
+        """
+
+        query = self.__query.get()
+        if new_filter:
+            query.filters = []
+
+        composite_filter = Filter(field, op, self.__convert_to_fb(value))
+        query.filters.append(composite_filter)
+
+        return Firestore(
+            self.requests,
+            self.project_id,
+            self.database_name,
+            self.headers.get("Authorization", "").replace("Bearer ", ""),
+            _collections=self.__collections.get(),
+            _documents=self.__documents.get(),
+            _query=query
+        )
+
+    def order_by(self, field: str, direction: Literal["ASCENDING", "DESCENDING"] = "ASCENDING", new_order: bool = False):
+        """Creates a structured query order by clause
+
+        Args:
+            field (str): Field to order by
+            direction (Literal["ASCENDING", "DESCENDING"]): Direction to order by
+            new_order (bool): Whether to overwrite existing order by clauses
+        """
+
+        query = self.__query.get()
+
+        if new_order:
+            query.order_by = []
+
+        order = OrderBy(field, direction)
+        query.order_by.append(order)
+
+        return Firestore(
+            self.requests,
+            self.project_id,
+            self.database_name,
+            self.headers.get("Authorization", "").replace("Bearer ", ""),
+            _collections=self.__collections.get(),
+            _documents=self.__documents.get(),
+            _query=query
+        )
+
+    def limit(self, limit: int):
+        """Creates a structured query limit clause
+
+        Args:
+            limit (int): Number of documents to return. Default is 100.
+        """
+
+        query = self.__query.get()
+        query.limit = limit
+
+        return Firestore(
+            self.requests,
+            self.project_id,
+            self.database_name,
+            self.headers.get("Authorization", "").replace("Bearer ", ""),
+            _collections=self.__collections.get(),
+            _documents=self.__documents.get(),
+            _query=query
+        )
 
     def update_document(self, document="", data={}, _new=False):
         if not _new:
@@ -175,17 +357,17 @@ class Firestore:
         if response.status_code != 200:
             raise_detailed_error(response)
 
-    def list_documents(self, collection: str=""):
+    def list_documents(self, collection: str = ""):
         """Lists all documents in a collection
 
         Args:
             collection (str): Collection path relative to the base path passed on initialization
         """
-        
+
         request_url = self.base_path
         if collection:
             request_url += f"/{collection}"
-            
+
         request_url = replace_all(request_url, '//', '/')
         request_url = f"https://{request_url}"
 
@@ -217,7 +399,9 @@ class Firestore:
                     for v_type, v_value in item.items()
                 ]
             case _:
-                print("WARNING: Unsupported dtype, defaulting to NoneType:", dtype)
+                logger = getLogger(__name__)
+                logger.warning(
+                    "WARNING: Unsupported dtype, defaulting to NoneType:", dtype)
 
         return processed
 

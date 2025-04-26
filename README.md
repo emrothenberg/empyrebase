@@ -531,6 +531,29 @@ articles_by_likes = db.sort(articles, "likes")
 
 The `firestore` method in empyrebase allows interaction with Firebase Firestore.
 
+### Migration Notice (v2.0.0)
+
+- `firebase_path` argument in `firestore()` has been deprecated and removed.  
+- Firestore navigation now supports **chained `collection()` and `document()` methods**.
+- Queries are now built using `where()`, `order_by()`, and `limit()` on collection references.
+- If you used `firebase.firestore(firebase_path=...)`, remove `firebase_path` and update your code to use chained collection/document navigation.
+
+**Example Update:**
+
+Old (v1.x):
+
+```python
+firestore = firebase.firestore(firebase_path="users")
+user = firestore.get_document("user_id")
+```
+
+New (v2.0.0):
+
+```python
+firestore = firebase.firestore()
+user = firestore.collection("users").get_document("user_id")
+```
+
 ### Initialize Firestore
 
 Initialize Firestore with required project and authentication parameters.
@@ -543,8 +566,10 @@ auth_id = "your_auth_id_token" # Optional. Enables authorized transactions.
 database_name = "your_database_name" # Optional. defaults to "(default)"
 
 
-firestore = firebase.firestore(firebase_path=firebase_path, database_name=database_name, auth_id=auth_id)
+firestore = firebase.firestore(database_name=database_name, auth_id=auth_id)
 ```
+
+**Note:** `firebase_path` in firestore initialization has been depracated since version 2.0.0.
 
 ### Authorization
 
@@ -561,9 +586,11 @@ firestore.authorize("auth_id_token")
 Navigation can be done either using absolute paths using `firestore.get_document("/path/to/document")` or using collection-document pairs, as follows:
 
 ```python
-collection = firestore.collection("collection")
-document1 = collection.get_document("document1")
-document2 = firestore.collection.document("document2").get_document()
+collection1 = firestore.collection("path/to/collection")
+collection2 = firestore.collection("path").document("to").collection("collection")
+document1 = collection1.get_document("document1")
+document2 = collection1.document("document2").get_document()
+document3 = collection2.document("path/to/document").get_document()
 ```
 
 The same logic applies to creating, updating and listing documents, but not for batch document get. Due to Firebase's API structure, batch_get_document must always receive absolute paths.
@@ -598,11 +625,28 @@ documents = firestore.batch_get_documents(["users/user_id1", "users/user_id2"])
 
 #### Run Query
 
-Run a structured query against a collection.
+Run a structured query against a collection. Methods:
+- `where(field, op, value)`: Filters query
+- `order_by(field, direction)`: Orders query based on field in ascending or descending order.
+- `limit(lim)`: Limits results
+
+Supported operators for filters:
+|      Operator      |       API Value       |
+|:------------------:|:---------------------:|
+| ==                 | EQUAL                 |
+| !=                 | NOT_EQUAL             |
+| <                  | LESS_THAN             |
+| <=                 | LESS_THAN_OR_EQUAL    |
+| >                  | GREATER_THAN          |
+| >=                 | GREATER_THAN_OR_EQUAL |
+| array-contains     | ARRAY_CONTAINS        |
+| in                 | IN                    |
+| not-in             | NOT_IN                |
+| array-contains-any | ARRAY_CONTAINS_ANY    |
 
 ```python
-query = {"field": "name", "value": "John Doe"}
-results = firestore.run_query("users", query)
+collection = firestore.collection("path/to/collection")
+queried = collection.where("field", "==", "value").limit(10)
 ```
 
 #### Update a Document

@@ -7,7 +7,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from .services import Auth, Database, Firestore, Storage
 
 PACKAGE_NAME = "empyrebase"
-CURRENT_VERSION = "1.2.1"
+CURRENT_VERSION = "2.0.0"
 
 def warn_if_outdated():
     try:
@@ -16,11 +16,14 @@ def warn_if_outdated():
         latest_version = res.json()["info"]["version"]
 
         if parse_version(CURRENT_VERSION) < parse_version(latest_version):
-            import logging
-            logging.warning(f"You are using {PACKAGE_NAME} version {CURRENT_VERSION}, "
+            from logging import getLogger
+            logger = getLogger(__name__)
+            logger.warning(f"You are using {PACKAGE_NAME} version {CURRENT_VERSION}, "
                             f"but {latest_version} is already published on PyPI.")
     except Exception as e:
-        print(f"Could not check PyPI for version: {e}")
+        from logging import getLogger
+        logger = getLogger(__name__)
+        logger.warning(f"Could not check PyPI for version: {e}")
         
 def initialize_app(config, skip_version_check=False):
     if not skip_version_check:
@@ -62,8 +65,8 @@ class Firebase:
     def database(self):
         return Database(self.credentials, self.api_key, self.database_url, self.requests)
     
-    def firestore(self, firebase_path: str="/", database_name="(default)", auth_id: str | None=None):
-        return Firestore(self.requests, self.project_id, firebase_path, database_name, auth_id)
+    def firestore(self, database_name="(default)", auth_id: str | None=None):
+        return Firestore(self.requests, self.project_id, database_name, auth_id)
 
     def storage(self):
         return Storage(self.credentials, self.storage_bucket, self.requests)
