@@ -86,6 +86,9 @@ auth = firebase.auth()
 # Log the user in
 user = auth.sign_in_with_email_and_password(email, password)
 
+# Log the user in usin OAuth credentials
+user = auth.sign_in_with_oauth("oauth_token") # Optional: provider_id. Default: "google.com"
+
 # Log the user in anonymously
 user = auth.sign_in_anonymous()
 
@@ -106,6 +109,17 @@ data = {
 # Pass the user's idToken to the push method
 results = db.child("users").push(data, user['idToken'])
 ```
+
+In order to obtain the OAuth token for google.com, you'll first need to obtain your client id and secret from GCP console:
+1. Go to the url (make sure to enter your actual project id): https://console.cloud.google.com/apis/credentials?pli=1&project=<project_id>
+2. Under "OAuth 2.0 Client IDs" find your client and click on the edit button
+3. In the "Additional information" column you'll find the client ID, and further down that same column you'll find your client secret.
+
+After obtaining your client ID and secret, you may use the following method to get the OAuth token:
+```python
+token = auth.get_google_oauth_token("client_id", "client_secret") # Optional: redirect_uri. Default: "http://localhost"
+```
+Make sure that the redirect_uri (even if just http://localhost) is registered under the "Authorized redirect URIs" section in the client configuration.
 
 ### Token expiry
 

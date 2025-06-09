@@ -7,7 +7,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from .services import Auth, Database, Firestore, Storage
 
 PACKAGE_NAME = "empyrebase"
-CURRENT_VERSION = "2.0.0"
+CURRENT_VERSION = "2.1.0"
 
 def warn_if_outdated():
     try:

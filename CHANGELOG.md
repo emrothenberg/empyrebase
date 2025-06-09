@@ -1,7 +1,11 @@
+# 2.1.0
+### Added
+- Auth: Google account and OAuth login
+
 ## 2.0.0
 ### Added
 - Firestore: Query builder
-- - Firestore: Protected private variables for safer usage
+- Firestore: Protected private variables for safer usage
 
 ### Fixed
 - Firestore: `.document()` and `.collection()` can now safely get multi-level refs
