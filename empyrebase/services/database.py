@@ -120,7 +120,7 @@ class Database:
             return PyreResponse(convert_to_pyre(request_dict.items()), query_key)
         # return keys if shallow
         if build_query.get("shallow"):
-            return PyreResponse(request_dict.keys(), query_key)
+            return PyreResponse(list(request_dict.keys()), query_key)
         # otherwise sort
         sorted_response = None
         if build_query.get("orderBy"):
@@ -191,7 +191,7 @@ class Database:
         now = int(time.time() * 1000)
         duplicate_time = now == self.last_push_time
         self.last_push_time = now
-        time_stamp_chars = [0] * 8
+        time_stamp_chars = [""] * 8
         for i in reversed(range(0, 8)):
             time_stamp_chars[i] = push_chars[now % 64]
             now = int(math.floor(now / 64))

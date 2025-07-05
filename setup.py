@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='empyrebase',
-    version='2.1.1',
+    version='2.1.2',
     url='https://github.com/emrothenberg/empyrebase',
     description='A simple python wrapper for the Firebase API with current deps',
     long_description=long_description,
@@ -13,7 +13,7 @@ setup(
     author='emrothenberg',
     license='MIT',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.11',

@@ -48,7 +48,7 @@ class Filter:
 
 
 class OrderBy:
-    def __init__(self, field, direction: Literal["ASCENDING, DESCENDING"] = "ASCENDING"):
+    def __init__(self, field, direction: Literal["ASCENDING", "DESCENDING"] = "ASCENDING"):
         self.field = field
         self.direction = direction
 

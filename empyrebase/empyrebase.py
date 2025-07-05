@@ -7,7 +7,7 @@ from google.oauth2 import service_account
 from .services import Auth, Database, Firestore, Storage
 
 PACKAGE_NAME = "empyrebase"
-CURRENT_VERSION = "2.1.1"
+CURRENT_VERSION = "2.1.2"
 
 def warn_if_outdated():
     try:
@@ -50,9 +50,9 @@ class Firebase:
             ]
             service_account_type = type(config["serviceAccount"])
             if service_account_type is str:
-                self.credentials = service_account.Credentials.from_service_account_file(config["serviceAccount"], scopes)
+                self.credentials = service_account.Credentials.from_service_account_file(config["serviceAccount"], scopes=scopes)
             if service_account_type is dict:
-                self.credentials = service_account.Credentials.from_service_account_info(config["serviceAccount"], scopes)
+                self.credentials = service_account.Credentials.from_service_account_info(config["serviceAccount"], scopes=scopes)
         
         adapter = HTTPAdapter()
 

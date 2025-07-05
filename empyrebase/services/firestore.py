@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from itertools import zip_longest
+from requests import Session
 from typing import List, Literal
 from empyrebase.types.firestore import Document, Filter, OrderBy, StructuredQuery
 from empyrebase.types.private import Private
@@ -14,7 +14,7 @@ class Firestore:
     project_id: str
     database_name: str
     headers: dict
-    requests: object
+    requests: Session
     firebase_path: Private[str]
     base_path: Private[str]
     __query: Private[StructuredQuery]
@@ -196,7 +196,7 @@ class Firestore:
             return Document({}, False)
         else:
             if _during_update:
-                return {}
+                return Document({}, False)
             raise_detailed_error(response)
 
     def batch_get_documents(self, documents: list):
@@ -324,9 +324,13 @@ class Firestore:
         )
 
     def update_document(self, document="", data={}, _new=False):
+        logger = getLogger(__name__)
         if not _new:
             existing_data = self.get_document(document, True)
-            data = {**existing_data, **data}
+            if existing_data:
+                data = {**existing_data.to_dict(), **data}
+            else:
+                logger.warning("Document does not exist. Creating new document.")
 
         firestore_data = self._dict_to_doc(data)
 
@@ -364,7 +368,7 @@ class Firestore:
             collection (str): Collection path relative to the base path passed on initialization
         """
 
-        request_url = self.base_path
+        request_url = self.base_path.get()
         if collection:
             request_url += f"/{collection}"
 

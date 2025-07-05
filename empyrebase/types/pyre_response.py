@@ -1,12 +1,13 @@
 from collections import OrderedDict
 
+
 class PyreResponse:
-    def __init__(self, pyres, query_key):
+    def __init__(self, pyres: dict | list, query_key: str):
         self.pyres = pyres
         self.query_key = query_key
 
-    def __getitem__(self,index):
-       return self.pyres[index]
+    def __getitem__(self, index):
+        return self.pyres[index]
 
     def val(self):
         if isinstance(self.pyres, list) and self.pyres:

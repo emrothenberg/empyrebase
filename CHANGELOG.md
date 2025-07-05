@@ -1,3 +1,8 @@
+## 2.2.2
+### Fixed
+- Type hints
+- Errors on document updates
+
 ## 2.1.1
 ### Fixed
 - Removed deprecated dependencies
