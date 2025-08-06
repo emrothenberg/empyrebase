@@ -389,6 +389,8 @@ class Firestore:
                 processed = str(value)
             case 'integerValue':
                 processed = int(value)
+            case 'doubleValue':
+                processed = float(value)
             case 'booleanValue':
                 processed = bool(value)
             case 'mapValue':
@@ -414,6 +416,7 @@ class Firestore:
                 else {"timestampValue": datetime.now().replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if value == self.SERVER_TIMESTAMP
                 else {"booleanValue": value} if isinstance(value, bool)
                 else {"integerValue": value} if isinstance(value, int)
+                else {"doubleValue": value} if isinstance(value, float) or isinstance(value, int)
                 else {"timestampValue": value.replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if isinstance(value, datetime)
                 else {"mapValue": {"fields": self._dict_to_doc(value)}} if isinstance(value, dict)
                 else {"arrayValue": {"values": [self.__convert_to_fb(v) for v in value]}} if isinstance(value, list)
