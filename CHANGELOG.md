@@ -1,4 +1,14 @@
-## 2.2.2
+## 2.2.0
+### Added
+- doubleValue support
+
+### Fixed
+- Dependency issues
+
+### Thanks
+Thanks to @fahhem for adding doubleValue support
+
+## 2.1.2
 ### Fixed
 - Type hints
 - Errors on document updates
