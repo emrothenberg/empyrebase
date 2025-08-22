@@ -67,7 +67,7 @@ class Firestore:
     def authorize(self, auth_id: str):
         self.headers["Authorization"] = f"Bearer {auth_id}"
 
-    def collection(self, collection: str):
+    def collection(self, collection: str, *path_segments: str):
         """Returns a collection reference
 
         Args:
@@ -77,6 +77,7 @@ class Firestore:
         collections = self.__collections.get()
         documents = self.__documents.get()
 
+        collection = "/".join([collection.strip("/"), *[segment.strip("/") for segment in path_segments]])
         path_parts = collection.split("/")
 
         segments_1 = path_parts[::2]
@@ -111,7 +112,7 @@ class Firestore:
 
         return collection_ref
 
-    def document(self, document: str):
+    def document(self, document: str, *path_segments: str):
         """Returns a document reference
 
         Args:
@@ -121,6 +122,7 @@ class Firestore:
         collections = self.__collections.get()
         documents = self.__documents.get()
 
+        document = "/".join([document.strip("/"), *[segment.strip("/") for segment in path_segments]])
         path_parts = document.split("/")
         segments_1 = path_parts[::2]
         try:
@@ -205,7 +207,7 @@ class Firestore:
         Args:
             documents (list): List of document paths relative to the base path passed on initialization
         """
-        request_url = f"{self.base_path}:batchGet"
+        request_url = f"{self.base_path.get()}:batchGet"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -231,7 +233,7 @@ class Firestore:
         """
 
         collection = self.firebase_path.get()
-        if len(collection.split("/")) % 2 == 0:
+        if len(collection.strip("/").split("/")) % 2 == 0:
             raise ValueError(
                 "Cannoot run query on a document. Use collection() instead.")
 
@@ -337,7 +339,7 @@ class Firestore:
         firestore_data = {k: v for k,
                           v in firestore_data.items() if v is not None}
 
-        request_url = f"{self.base_path}/{document}"
+        request_url = f"{self.base_path.get()}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -353,7 +355,7 @@ class Firestore:
         Args:
             document (str): Document path relative to the base path passed on initialization
         """
-        request_url = f"{self.base_path}/{document}"
+        request_url = f"{self.base_path.get()}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 

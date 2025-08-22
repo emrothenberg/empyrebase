@@ -5,9 +5,9 @@ with open('README.md') as f:
 
 setup(
     name='empyrebase',
-    version='2.2.0',
+    version='2.3.1',
     url='https://github.com/emrothenberg/empyrebase',
-    description='A simple python wrapper for the Firebase API with current deps',
+    description="A simple python wrapper for the Firebase API with current deps. Includes Realtime Database, Firestore, Authentication, and Storage.",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='emrothenberg',

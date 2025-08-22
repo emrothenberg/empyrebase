@@ -597,14 +597,21 @@ firestore.authorize("auth_id_token")
 
 #### Navigation
 
-Navigation can be done either using absolute paths using `firestore.get_document("/path/to/document")` or using collection-document pairs, as follows:
+Navigation can be done either using absolute paths using one of three methods:
+1. `firestore.get_document("/path/to/document")`
+2. Using chained collection-document pairs
+3. Using path segments
 
+Examples:
 ```python
 collection1 = firestore.collection("path/to/collection")
 collection2 = firestore.collection("path").document("to").collection("collection")
+collection3 = firestore.collection("path", "to", "collection")
+collection4 = firestore.collection("path/to", "collection")
 document1 = collection1.get_document("document1")
 document2 = collection1.document("document2").get_document()
 document3 = collection2.document("path/to/document").get_document()
+document4 = collection2.document("path", "to", "document")
 ```
 
 The same logic applies to creating, updating and listing documents, but not for batch document get. Due to Firebase's API structure, batch_get_document must always receive absolute paths.

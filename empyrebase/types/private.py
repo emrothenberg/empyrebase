@@ -1,4 +1,5 @@
 from typing import TypeVar, Generic
+import copy
 
 T = TypeVar('T')
 
@@ -7,7 +8,7 @@ class Private(Generic[T]):
         super().__setattr__('_value', value)
 
     def get(self) -> T:
-        return super().__getattribute__('_value')
+        return copy.deepcopy(super().__getattribute__('_value'))
 
     def __getattribute__(self, name):
         if name == '_value':

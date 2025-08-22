@@ -1,3 +1,15 @@
+## 2.3.1
+### Fixed
+- Update document and batch_get_documents bug fixes
+
+## 2.3.0
+### Added
+- Firestore path segments
+
+### Fixed
+- Firestore collection detection bugs
+- Isolated firestore collection/document/get_document sub-instances
+
 ## 2.2.0
 ### Added
 - doubleValue support
