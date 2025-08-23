@@ -614,7 +614,7 @@ document3 = collection2.document("path/to/document").get_document()
 document4 = collection2.document("path", "to", "document")
 ```
 
-The same logic applies to creating, updating and listing documents, but not for batch document get. Due to Firebase's API structure, batch_get_document must always receive absolute paths.
+The same logic applies to creating, updating, listing documents, and batch getting documents.
 
 #### Create a Document
 

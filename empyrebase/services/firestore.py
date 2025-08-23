@@ -207,7 +207,7 @@ class Firestore:
         Args:
             documents (list): List of document paths relative to the base path passed on initialization
         """
-        request_url = f"{self.base_path.get()}:batchGet"
+        request_url = f"{self.base_path.get()}/{self.firebase_path.get()}:batchGet"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -237,7 +237,7 @@ class Firestore:
             raise ValueError(
                 "Cannoot run query on a document. Use collection() instead.")
 
-        request_url = f"{self.base_path.get()}/{'/'.join(self.firebase_path.get().split('/')[:-1])}/:runQuery"
+        request_url = f"{self.base_path.get()}/{collection}/:runQuery"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -247,7 +247,6 @@ class Firestore:
 
         if response.status_code == 200:
             results = response.json()
-            print(results)
             return [Document(self._doc_to_dict(result['document']['fields']), True) for result in results if 'document' in result]
         else:
             raise_detailed_error(response)
@@ -339,7 +338,7 @@ class Firestore:
         firestore_data = {k: v for k,
                           v in firestore_data.items() if v is not None}
 
-        request_url = f"{self.base_path.get()}/{document}"
+        request_url = f"{self.base_path.get()}/{self.firebase_path.get()}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -355,7 +354,7 @@ class Firestore:
         Args:
             document (str): Document path relative to the base path passed on initialization
         """
-        request_url = f"{self.base_path.get()}/{document}"
+        request_url = f"{self.base_path.get()}/{self.firebase_path.get()}/{document}"
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
@@ -370,7 +369,7 @@ class Firestore:
             collection (str): Collection path relative to the base path passed on initialization
         """
 
-        request_url = self.base_path.get()
+        request_url = f"{self.base_path.get()}/{self.firebase_path.get()}"
         if collection:
             request_url += f"/{collection}"
 

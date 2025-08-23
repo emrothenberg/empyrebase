@@ -1,3 +1,8 @@
+## 2.3.2
+### Fixed
+- Isolated update_document and delete_document now work
+- Fixed run query
+
 ## 2.3.1
 ### Fixed
 - Update document and batch_get_documents bug fixes
