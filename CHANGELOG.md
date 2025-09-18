@@ -1,4 +1,4 @@
-## 2.3.3
+## 2.3.4
 ### Fixed
 - Absolute path issue in create_document
 

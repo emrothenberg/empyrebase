@@ -175,15 +175,16 @@ class Firestore:
         if not document and not documents:
             raise ValueError("Document path is required")
         
-        path_segments = document.strip("/").split("/")
-        if len(collections) == len(documents):
-            collections.extend(path_segments[0::2])
-            if len(path_segments) > 1:
-                documents.extend(path_segments[1::2])
-        else:
-            documents.extend(path_segments[0::2])
-            if len(path_segments) > 1:
-                collections.extend(path_segments[1::2])
+        if document:
+            path_segments = document.strip("/").split("/")
+            if len(collections) == len(documents):
+                collections.extend(path_segments[0::2])
+                if len(path_segments) > 1:
+                    documents.extend(path_segments[1::2])
+            else:
+                documents.extend(path_segments[0::2])
+                if len(path_segments) > 1:
+                    collections.extend(path_segments[1::2])
 
         if len(collections) != len(documents):
             raise ValueError("Document ref must be an even child.")
