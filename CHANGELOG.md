@@ -1,3 +1,7 @@
+## 2.3.3
+### Fixed
+- Absolute path issue in create_document
+
 ## 2.3.2
 ### Fixed
 - Isolated update_document and delete_document now work

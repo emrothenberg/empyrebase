@@ -1,10 +1,14 @@
+import socket
+import threading
+from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import unquote  # if you still want to unquote()
 import datetime
 import json
 import jwt as jwt
 from empyrebase.utils import raise_detailed_error
 import requests
 from urllib.parse import unquote
-from Crypto.PublicKey import RSA
+from http import server
 import webbrowser
 
 
@@ -27,56 +31,103 @@ class Auth:
         self.current_user = request_object.json()
         return request_object.json()
 
-    def get_google_oauth_token(self, client_id: str, client_secret: str, redirect_uri: str = "http://localhost", scope: str = "email%20profile%20openid") -> str:
+    def get_google_oauth_token(self, client_id: str, client_secret: str,
+                               redirect_uri: str = "http://localhost:80",
+                               scope: str = "email profile openid") -> str:
         """
-        Retrieves an OAuth token from Google using the Client Credentials Flow.
-
-        This method opens a web browser to redirect the user to the Google authentication page,
-        and then prompts them to paste the authorization code back in. The resulting access token
-        is returned as a string.
-
-        Args:
-            client_id (str): The ID of your application on Google Cloud Console.
-            client_secret (str): The secret key for your application on Google Cloud Console.
-            redirect_uri (str, optional): The URL to which the user will be redirected after authorization. Defaults to "http://localhost".
-            scope (str, optional): A space-separated list of scopes that you want to use with this token. Defaults to "email profile openid".
-
-        Returns:
-            str: The OAuth access token.
+        Opens the user's browser, captures the authorization code automatically when using the
+        default localhost redirect, then exchanges it for a token. If a custom redirect_uri is
+        provided (non-localhost), falls back to manual paste for the code.
         """
-        base = "https://accounts.google.com/o/oauth2/v2/auth"
-        auth_url = (
-            f"{base}?response_type=code"
-            f"&client_id={client_id}"
-            f"&redirect_uri={redirect_uri}"
-            f"&scope={scope}"
-            f"&access_type=offline"
-            f"&prompt=consent"
-        )
+        def build_auth_url(_redirect_uri: str) -> str:
+            base = "https://accounts.google.com/o/oauth2/v2/auth"
+            q = {
+                "response_type": "code",
+                "client_id": client_id,
+                "redirect_uri": _redirect_uri,
+                "scope": scope,
+                "access_type": "offline",
+                "prompt": "consent",
+            }
+            return f"{base}?{urlencode(q)}"
 
-        print("Visit this URL to sign in:")
-        print(auth_url)
-        webbrowser.open(auth_url)
-        code = input("Paste the code here: ")
-        code = unquote(code)
+        code = None
+        used_redirect_uri = redirect_uri
 
-        # Get actual token
+        if redirect_uri.strip().startswith("http://localhost"):
+            port = redirect_uri.strip().lower().replace(
+                "http://", "").split(":")[-1]
+            if port.startswith("localhost"):
+                raise ValueError(
+                    "Invalid redirect_uri. If using localhost, please specify a port.")
+            if not port.isnumeric():
+                raise ValueError("Invalid redirect_uri. Port must be numeric.")
+
+            port = int(port)
+            sock = socket.socket()
+            sock.bind(("127.0.0.1", port))
+            sock.close()
+
+            used_redirect_uri = f"http://localhost{':' + str(port) if port != 80 else ''}"
+
+            class Handler(server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    nonlocal code
+                    qs = parse_qs(urlparse(self.path).query)
+                    if "code" in qs:
+                        code = qs["code"][0]
+                        self.send_response(200)
+                        self.send_header(
+                            "Content-Type", "text/html; charset=utf-8")
+                        self.end_headers()
+                        self.wfile.write(
+                            b"<html><body><h1>Authorised</h1>You can close this tab.</body></html>")
+                    else:
+                        self.send_response(400)
+                        self.end_headers()
+                    # stop server after first request
+                    threading.Thread(target=httpd.shutdown,
+                                     daemon=True).start()
+
+                # silence default logging
+                def log_message(self, *_): pass
+
+            httpd = server.HTTPServer(("127.0.0.1", port), Handler)
+            t = threading.Thread(target=httpd.serve_forever, daemon=True)
+            t.start()
+
+            # open browser to Google's auth page targeting our local redirect
+            webbrowser.open(build_auth_url(used_redirect_uri))
+
+            # wait for code (with a reasonable timeout)
+            t.join(timeout=300)  # 5 minutes max wait
+
+            if code is None:
+                raise RuntimeError(
+                    "No authorization code received on the local redirect.")
+        else:
+            # CUSTOM redirect (not localhost): let the user paste the code
+            auth_url = build_auth_url(used_redirect_uri)
+            print("Visit this URL to sign in:")
+            print(auth_url)
+            webbrowser.open(auth_url)
+            code = input("Paste the code here: ").strip()
+            code = unquote(code)
+
+        # Exchange code for token
         token_url = "https://oauth2.googleapis.com/token"
         data = {
-            "code": (code),
+            "code": code,
             "client_id": client_id,
             "client_secret": client_secret,
-            "redirect_uri": redirect_uri,
-            "grant_type": "authorization_code"
+            "redirect_uri": used_redirect_uri,
+            "grant_type": "authorization_code",
         }
-        request_object = requests.post(token_url, data=data)
-        raise_detailed_error(request_object)
-        request_json = request_object.json()
-        # OAuth may use both access_token and id_token, there's no difference.
-        # Since the postBody parameters use id_token as a param name, I'll use id_token as a first choice
-        return request_json.get("id_token", request_json.get("access_token"))
-        # Since the postBody parameters use id_token as a param name, I'll use id_token as a first choice
-        return request_json.get("id_token", request_json.get("access_token"))
+        r = requests.post(token_url, data=data)
+        raise_detailed_error(r)
+        j = r.json()
+        token = j.get("id_token", j.get("access_token"))
+        return token
 
     def sign_in_with_oauth(self, oauth_token: str, provider_id: str = "google.com", request_uri: str = "http://localhost") -> dict:
         """

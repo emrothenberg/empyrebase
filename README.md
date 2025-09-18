@@ -1,8 +1,24 @@
 # Empyrebase
 
 A simple python wrapper for the [Firebase API](https://firebase.google.com). Supports Realtime DB, Firestore, Auth and Storage.
+<p align="center">
+<img src="images/empyrebase-logo.png" alt="Empyrebase logo" width="200"/>
+</p>
 
-[![PyPI Downloads](https://static.pepy.tech/badge/empyrebase)](https://pepy.tech/projects/empyrebase)
+<p align="center">
+  <a href="https://pypi.org/project/empyrebase/">
+    <img src="https://img.shields.io/pypi/v/empyrebase.svg" alt="PyPI version">
+  </a>
+  <a href="https://pepy.tech/project/empyrebase">
+    <img src="https://pepy.tech/badge/empyrebase" alt="Downloads">
+  </a>
+  <a href="https://pypi.org/project/empyrebase/">
+    <img src="https://img.shields.io/pypi/pyversions/empyrebase.svg" alt="Python Versions">
+  </a>
+  <a href="https://github.com/emrothenberg/empyrebase/blob/master/LICENSE">
+    <img src="https://img.shields.io/pypi/l/empyrebase.svg" alt="License">
+  </a>
+</p>
 
 ## Installation
 
