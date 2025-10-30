@@ -1,3 +1,8 @@
+## 2.4.0
+### Added
+- Firestore null value (NoneType) support
+- Firestore GeoPoint support
+
 ## 2.3.4
 ### Fixed
 - Absolute path issue in create_document

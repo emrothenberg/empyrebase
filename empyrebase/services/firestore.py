@@ -2,9 +2,11 @@ from datetime import datetime, timezone
 from requests import Session
 from typing import List, Literal
 from empyrebase.types.firestore import Document, Filter, OrderBy, StructuredQuery
+from empyrebase.types.geopoint import GeoPoint
 from empyrebase.types.private import Private
 from empyrebase.utils import raise_detailed_error, replace_all
 from logging import getLogger
+import base64
 
 
 class Firestore:
@@ -409,6 +411,10 @@ class Firestore:
             case 'timestampValue':
                 processed = datetime.fromisoformat(
                     value.replace("Z", "+00:00"))
+            case 'bytesValue':
+                processed = base64.b64decode(value)
+            case 'geoPointValue':
+                processed = GeoPoint(**value)
             case 'arrayValue':
                 processed = [
                     self.__process_value(v_type, v_value)
@@ -431,6 +437,8 @@ class Firestore:
                 else {"timestampValue": value.replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if isinstance(value, datetime)
                 else {"mapValue": {"fields": self._dict_to_doc(value)}} if isinstance(value, dict)
                 else {"arrayValue": {"values": [self.__convert_to_fb(v) for v in value]}} if isinstance(value, list)
+                else {"bytesValue": base64.b64encode(value).decode()} if isinstance(value, bytes)
+                else {"geoPointValue": value.to_dict()} if isinstance(value, GeoPoint)
                 else {"nullValue": None} if value == None
                 else None)
 

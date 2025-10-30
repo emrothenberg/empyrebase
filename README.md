@@ -710,6 +710,32 @@ Lists all documents in a collection.
 documents = firestore.list_documents("users")
 ```
 
+### Special types
+### GeoPoint
+
+`GeoPoint` represents a geographical coordinate with latitude and longitude values.
+
+#### Import and Usage
+
+```python
+from empyrebase.types.geopoint import GeoPoint
+
+# Create using explicit parameters
+point = GeoPoint(latitude=32.264345616785256, longitude=-112.74142373854478)
+
+# Create using a dictionary
+coordinates = {"latitude": 32.264345616785256, "longitude": -112.74142373854478}
+point_2 = GeoPoint(**coordinates)  # Requires both keys to be exactly 'latitude' and 'longitude'
+```
+
+#### Access Data
+
+```python
+coordinates = point.to_dict()  # Returns {'latitude': 32.264345616785256, 'longitude': -112.74142373854478}
+lat = point.latitude.get()
+lng = point.longitude.get()
+```
+
 #### Server timestamp
 
 In order to get the server timestamp in a field value use `firestore.SERVER_TIMESTAMP`:
