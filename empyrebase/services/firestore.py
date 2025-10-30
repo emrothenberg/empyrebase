@@ -394,6 +394,8 @@ class Firestore:
     def __process_value(self, dtype, value):
         processed = None
         match dtype:
+            case 'nullValue':
+                processed = None
             case 'stringValue':
                 processed = str(value)
             case 'integerValue':
