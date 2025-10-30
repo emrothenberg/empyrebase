@@ -711,11 +711,11 @@ documents = firestore.list_documents("users")
 ```
 
 ### Special types
-### GeoPoint
+#### GeoPoint
 
 `GeoPoint` represents a geographical coordinate with latitude and longitude values.
 
-#### Import and Usage
+##### Import and Usage
 
 ```python
 from empyrebase.types.geopoint import GeoPoint
@@ -728,7 +728,7 @@ coordinates = {"latitude": 32.264345616785256, "longitude": -112.74142373854478}
 point_2 = GeoPoint(**coordinates)  # Requires both keys to be exactly 'latitude' and 'longitude'
 ```
 
-#### Access Data
+##### Access Data
 
 ```python
 coordinates = point.to_dict()  # Returns {'latitude': 32.264345616785256, 'longitude': -112.74142373854478}
