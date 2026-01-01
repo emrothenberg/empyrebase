@@ -1,3 +1,8 @@
+## 2.4.1
+### Removed
+- Python 2 support
+- Dependency on `six`
+
 ## 2.4.0
 ### Added
 - Firestore null value (NoneType) support

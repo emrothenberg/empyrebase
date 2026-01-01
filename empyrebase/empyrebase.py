@@ -7,7 +7,7 @@ from google.oauth2 import service_account
 from .services import Auth, Database, Firestore, Storage
 
 PACKAGE_NAME = "empyrebase"
-CURRENT_VERSION = "2.4.0"
+CURRENT_VERSION = "2.4.1"
 
 def warn_if_outdated():
     try:
