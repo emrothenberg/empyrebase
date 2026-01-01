@@ -2,7 +2,6 @@ import re
 import threading
 import time
 import warnings
-import six
 
 import requests
 
@@ -140,9 +139,6 @@ class SSEClient(object):
             self.last_id = msg.id
 
         return msg
-
-    if six.PY2:
-        next = __next__
 
 
 class Event(object):
