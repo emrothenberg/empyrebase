@@ -26,7 +26,7 @@ class Storage:
             self.path = new_path
         return self
 
-    def put(self, file, token=None, content_type=None):
+    def put(self, file, token=None, content_type=None, chunk_size=262144):
         # reset path
         path = self.path
         self.path = None
@@ -41,7 +41,7 @@ class Storage:
             raise_detailed_error(request_object)
             return request_object.json()
         elif self.credentials:
-            blob = self.bucket.blob(path)
+            blob = self.bucket.blob(path, chunk_size=chunk_size)
 
             # Add metadata to enable file previews in console
             blob.metadata = {"firebaseStorageDownloadTokens": str(uuid4())}

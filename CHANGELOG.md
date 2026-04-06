@@ -1,3 +1,8 @@
+## 2.5.0
+### Added
+- Firebase storage blob chunk size in `put`
+- Change email for Firebase Auth
+
 ## 2.4.1
 ### Removed
 - Python 2 support
