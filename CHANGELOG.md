@@ -1,3 +1,13 @@
+## 2.6.0
+### Added
+- Delete key from Firestore document
+
+### Fixed
+- Optimised Firestore document updates for less read operations
+
+### Changed
+- `firestore.SERVER_TIMESTAMP` is now `firestore.serverTimestamp`
+
 ## 2.5.2
 ### Fixed
 - Firestore document create and update are now completely isolated

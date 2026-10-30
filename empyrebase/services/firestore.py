@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 from requests import Session
 from typing import List, Literal
 from empyrebase.types.firestore import Document, Filter, OrderBy, StructuredQuery
@@ -12,7 +13,8 @@ import base64
 class Firestore:
     """Firebase Firestore"""
 
-    SERVER_TIMESTAMP = type("SERVER_TIMESTAMP", (), {})()
+    serverTimestamp = type("ServerTimestamp", (), {})()
+    deleteKey = type("DeleteKey", (), {})()
     project_id: str
     database_name: str
     headers: dict
@@ -79,7 +81,8 @@ class Firestore:
         collections = self.__collections.get()
         documents = self.__documents.get()
 
-        collection = "/".join([collection.strip("/"), *[segment.strip("/") for segment in path_segments]])
+        collection = "/".join([collection.strip("/"), *
+                              [segment.strip("/") for segment in path_segments]])
         path_parts = collection.split("/")
 
         segments_1 = path_parts[::2]
@@ -124,7 +127,8 @@ class Firestore:
         collections = self.__collections.get()
         documents = self.__documents.get()
 
-        document = "/".join([document.strip("/"), *[segment.strip("/") for segment in path_segments]])
+        document = "/".join([document.strip("/"), *[segment.strip("/")
+                            for segment in path_segments]])
         path_parts = document.split("/")
         segments_1 = path_parts[::2]
         try:
@@ -162,8 +166,8 @@ class Firestore:
             data (dict): Data to be stored in the document
         """
 
-        return self.update_document(document, data, _new=True)
-        
+        return self.update_document(document, data)
+
     def __get_document(self, document: str = "", _during_update: bool = False):
         """Fetches the document from firestore database
 
@@ -176,7 +180,7 @@ class Firestore:
 
         if not document and not documents:
             raise ValueError("Document path is required")
-        
+
         if document:
             path_segments = document.strip("/").split("/")
             if len(collections) == len(documents):
@@ -210,8 +214,8 @@ class Firestore:
             if _during_update:
                 return Document({}, False)
             raise_detailed_error(response)
-            
-    def get_document(self, document: str=""):
+
+    def get_document(self, document: str = ""):
         return self.__get_document(document)
 
     def batch_get_documents(self, documents: list):
@@ -337,15 +341,7 @@ class Firestore:
             _query=query
         )
 
-    def update_document(self, document="", data={}, _new=False):
-        logger = getLogger(__name__)
-        if not _new:
-            existing_data = self.__get_document(document, True)
-            if existing_data:
-                data = {**existing_data.to_dict(), **data}
-            else:
-                logger.warning("Document does not exist. Creating new document.")
-
+    def update_document(self, document="", data={}):
         firestore_data = self._dict_to_doc(data)
 
         firestore_data = {k: v for k,
@@ -355,8 +351,11 @@ class Firestore:
         request_url = replace_all(request_url, '//', '/')
         request_url = "https://" + request_url
 
+        params = [("updateMask.fieldPaths", path)
+                  for path in self._get_field_paths(data)]
+
         response = self.requests.patch(
-            request_url, headers=self.headers, json={"fields": firestore_data})
+            request_url, headers=self.headers, params=params, json={"fields": firestore_data})
 
         if response.status_code != 200:
             raise_detailed_error(response)
@@ -433,7 +432,7 @@ class Firestore:
 
     def __convert_to_fb(self, value):
         return ({"stringValue": value} if isinstance(value, str)
-                else {"timestampValue": datetime.now().replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if value == self.SERVER_TIMESTAMP
+                else {"timestampValue": datetime.now().replace(tzinfo=timezone.utc).isoformat(timespec="seconds")} if value == self.serverTimestamp
                 else {"booleanValue": value} if isinstance(value, bool)
                 else {"integerValue": value} if isinstance(value, int)
                 else {"doubleValue": value} if isinstance(value, float) or isinstance(value, int)
@@ -445,8 +444,26 @@ class Firestore:
                 else {"nullValue": None} if value == None
                 else None)
 
+    def _get_field_paths(self, data, prefix=()):
+        for key, value in data.items():
+            path = prefix + (key,)
+
+            if isinstance(value, dict) and value:
+                yield from self._get_field_paths(value, path)
+            else:
+                parts = []
+                for part in path:
+                    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part):
+                        parts.append(part)
+                    else:
+                        escaped = part.replace(
+                            "\\", "\\\\").replace("`", "\\`")
+                        parts.append(f"`{escaped}`")
+
+                yield ".".join(parts)
+
     def _dict_to_doc(self, data: dict):
-        return {key: self.__convert_to_fb(value) for key, value in data.items()}
+        return {key: self.__convert_to_fb(value) for key, value in data.items() if value != self.deleteKey}
 
     def _doc_to_dict(self, data: dict) -> dict:
         clean = {}
