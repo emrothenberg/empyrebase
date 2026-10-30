@@ -163,8 +163,8 @@ class Firestore:
         """
 
         return self.update_document(document, data, _new=True)
-
-    def get_document(self, document: str = "", _during_update: bool = False):
+        
+    def __get_document(self, document: str = "", _during_update: bool = False):
         """Fetches the document from firestore database
 
         Args:
@@ -210,6 +210,9 @@ class Firestore:
             if _during_update:
                 return Document({}, False)
             raise_detailed_error(response)
+            
+    def get_document(self, document: str=""):
+        self.__get_document(document)
 
     def batch_get_documents(self, documents: list):
         """Fetches multiple documents in a batch
@@ -337,7 +340,7 @@ class Firestore:
     def update_document(self, document="", data={}, _new=False):
         logger = getLogger(__name__)
         if not _new:
-            existing_data = self.get_document(document, True)
+            existing_data = self.__get_document(document, True)
             if existing_data:
                 data = {**existing_data.to_dict(), **data}
             else:

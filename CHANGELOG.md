@@ -1,3 +1,7 @@
+## 2.5.1
+### Fixed
+- Firestore document create and update are now completely isolated
+
 ## 2.5.0
 ### Added
 - Firebase storage blob chunk size in `put`
