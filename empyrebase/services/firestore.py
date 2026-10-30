@@ -212,7 +212,7 @@ class Firestore:
             raise_detailed_error(response)
             
     def get_document(self, document: str=""):
-        self.__get_document(document)
+        return self.__get_document(document)
 
     def batch_get_documents(self, documents: list):
         """Fetches multiple documents in a batch

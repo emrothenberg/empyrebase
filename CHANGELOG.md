@@ -1,4 +1,4 @@
-## 2.5.1
+## 2.5.2
 ### Fixed
 - Firestore document create and update are now completely isolated
 
